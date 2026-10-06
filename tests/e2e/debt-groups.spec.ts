@@ -1,0 +1,12 @@
+import { test, expect } from '@playwright/test';
+test('same-name debts have one card with combined principal, history and full collection', async ({ page }) => {
+  await page.goto('/#/wallets'); await page.getByRole('button', { name: 'Tạo ví', exact: true }).click(); await page.getByLabel('Tên ví', { exact: true }).fill('Ví nhóm thử'); await page.getByLabel('Số dư đầu kỳ', { exact: false }).fill('1000000'); await page.getByRole('button', { name: 'Lưu ví', exact: true }).click(); await expect(page.getByRole('dialog')).toHaveCount(0);
+  for (const amount of ['100000', '200000']) {
+    await page.getByRole('button', { name: 'Tạo giao dịch nhanh', exact: true }).click(); await page.getByRole('button', { name: 'Cho vay', exact: true }).click(); await page.getByRole('textbox', { name: 'Số tiền', exact: true }).fill(amount); await page.getByLabel('Người vay', { exact: true }).fill('Người thử'); await page.getByRole('button', { name: 'Lưu giao dịch', exact: true }).click(); await expect(page.getByRole('dialog')).toHaveCount(0);
+  }
+  await page.goto('/#/debts'); await page.getByRole('button', { name: 'Người khác nợ tôi', exact: true }).click(); await expect(page.locator('.debt-card')).toHaveCount(1); await expect(page.locator('.debt-card')).toContainText('300.000'); await expect(page.locator('.debt-card')).toContainText('2 khoản');
+  await page.locator('.debt-card').click(); await page.getByLabel('Số tiền thu', { exact: false }).fill('150000'); await page.getByRole('button', { name: 'Ghi nhận thu nợ', exact: true }).click(); await expect(page.locator('.detail-amount')).toContainText('150.000'); await expect(page.locator('.sheet .transaction-row')).toHaveCount(2);
+  await page.getByText('Các khoản gốc (2)', { exact: true }).click(); await expect(page.locator('.loan-breakdown')).toContainText('Đã thu'); await expect(page.locator('.loan-breakdown')).toContainText('150.000');
+  await page.getByRole('button', { name: 'Thanh toán toàn bộ', exact: true }).click(); await page.getByRole('button', { name: 'Ghi nhận thu nợ', exact: true }).click(); await expect(page.locator('.detail-amount')).toContainText('0'); await page.getByRole('button', { name: 'Đóng', exact: true }).click(); await expect(page.locator('.debt-card')).toHaveCount(1); await expect(page.locator('.debt-card')).toContainText('Đã thu');
+  await page.goto('/#/wallets'); await expect(page.locator('.wallet-card')).toContainText('1.000.000');
+});

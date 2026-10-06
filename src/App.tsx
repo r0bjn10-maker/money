@@ -1,0 +1,55 @@
+import { Component, Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
+import { LayoutDashboard, ArrowLeftRight, Target, ChartNoAxesCombined, Grid2X2, Plus, Search, ShieldCheck, Wallet, Shapes, Leaf, Check, X, WifiOff } from 'lucide-react';
+import { registerSW } from 'virtual:pwa-register';
+import { initializeDatabase } from './db';
+import { generateRecurring, type TransactionFilter } from './services';
+import { currentMonth } from './finance';
+import type { Transaction, TransactionType } from './types';
+import { AppContext, useMetadata, Loading } from './ui';
+import { TransactionForm, QuickMenu } from './TransactionForm';
+import { Dashboard } from './Dashboard';
+import { Transactions } from './Transactions';
+import { Wallets, Categories } from './WalletsCategories';
+import { Plans } from './Plans';
+import { Debts, Events, Recurring, Tags } from './Extended';
+import { Statistics } from './Statistics';
+const Settings = lazy(() => import('./Settings').then(m => ({ default: m.Settings })));
+const More = lazy(() => import('./Settings').then(m => ({ default: m.More })));
+const Trash = lazy(() => import('./Settings').then(m => ({ default: m.Trash })));
+const navItems = [{ route: 'dashboard', title: 'Tổng quan', icon: LayoutDashboard }, { route: 'transactions', title: 'Giao dịch', icon: ArrowLeftRight }, { route: 'plans', title: 'Kế hoạch', icon: Target }, { route: 'statistics', title: 'Thống kê', icon: ChartNoAxesCombined }, { route: 'more', title: 'Khác', icon: Grid2X2 }];
+const routes = new Set([...navItems.map(n => n.route), 'wallets', 'categories', 'debts', 'events', 'recurring', 'tags', 'trash', 'settings']);
+const readRoute = () => routes.has(location.hash.slice(2)) ? location.hash.slice(2) : 'dashboard';
+
+export class ErrorBoundary extends Component<{ children: ReactNode }, { error?: string }> {
+  state: { error?: string } = {};
+  static getDerivedStateFromError(error: Error) { return { error: error.message }; }
+  render() { return this.state.error ? <div className="startup-error"><Leaf size={40} /><h1>Không thể mở sổ tài chính</h1><p>{this.state.error}</p><p>Dữ liệu hiện có được giữ nguyên. Thử tải lại hoặc kiểm tra quyền lưu trữ của trình duyệt.</p><button className="button primary" onClick={() => location.reload()}>Thử lại</button></div> : this.props.children; }
+}
+export default function App() {
+  const metadata = useMetadata(); const [ready, setReady] = useState(false); const [startupError, setStartupError] = useState(''); const [route, setRoute] = useState(readRoute); const [filter, setFilter] = useState<TransactionFilter>({}); const [month, setMonth] = useState(currentMonth()); const [entry, setEntry] = useState<{ type: TransactionType; transaction?: Transaction; initialWalletId?: string }>(); const [quick, setQuick] = useState(false); const [toast, setToast] = useState<{ message: string; error: boolean }>(); const [offline, setOffline] = useState(!navigator.onLine); const [update, setUpdate] = useState<(() => Promise<void>)>(); const [globalSearch, setGlobalSearch] = useState('');
+  const notify = (message: string, error = false) => setToast({ message, error });
+  const run = async (action: () => Promise<unknown>, success?: string) => { try { await action(); if (success) notify(success); return true; } catch (error) { const name = error instanceof Error ? error.name : ''; const message = name === 'QuotaExceededError' ? 'Thiết bị không còn đủ dung lượng lưu trữ. Tải backup trước khi dọn dữ liệu trình duyệt.' : name === 'VersionError' ? 'Database đã được mở bằng phiên bản mới hơn. Cập nhật Mộc để tiếp tục; không xóa dữ liệu.' : name === 'SecurityError' ? 'Trình duyệt đang chặn lưu trữ local. Kiểm tra quyền lưu trữ cho trang này.' : error instanceof Error ? error.message : 'Có lỗi xảy ra. Dữ liệu chưa được thay đổi.'; notify(message, true); return false; } };
+  const navigate = (next: string, nextFilter: TransactionFilter = {}) => { setFilter(nextFilter); setRoute(next); location.hash = `/${next}`; window.scrollTo({ top: 0, behavior: 'instant' }); };
+  useEffect(() => {
+    initializeDatabase().then(async () => { setReady(true); await run(() => generateRecurring()); }).catch(e => setStartupError(e.message));
+    const onHash = () => setRoute(readRoute()); const onOnline = () => setOffline(!navigator.onLine); const onVisible = () => { if (document.visibilityState === 'visible') void run(() => generateRecurring()); };
+    window.addEventListener('hashchange', onHash); window.addEventListener('online', onOnline); window.addEventListener('offline', onOnline); document.addEventListener('visibilitychange', onVisible);
+    const updateSW = registerSW({ onNeedRefresh: () => setUpdate(() => () => updateSW(true)), onOfflineReady: () => notify('Mộc đã sẵn sàng hoạt động offline'), onRegisterError: () => notify('Chưa thể chuẩn bị offline. Mở lại khi có mạng để thử lần nữa.', true) });
+    return () => { window.removeEventListener('hashchange', onHash); window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOnline); document.removeEventListener('visibilitychange', onVisible); };
+  }, []);
+  useEffect(() => { if (!toast || toast.error) return; const timer = setTimeout(() => setToast(undefined), 5000); return () => clearTimeout(timer); }, [toast]);
+  useEffect(() => { const media = matchMedia('(prefers-color-scheme: dark)'); const apply = () => { document.documentElement.dataset.theme = metadata.settings.theme === 'system' ? media.matches ? 'dark' : 'light' : metadata.settings.theme; }; apply(); media.addEventListener('change', apply); return () => media.removeEventListener('change', apply); }, [metadata.settings.theme]);
+  if (startupError) return <div className="startup-error"><Leaf size={40} /><h1>Không mở được database</h1><p>{startupError}</p><p>Dữ liệu cũ không bị xóa. Kiểm tra quyền lưu trữ và tải lại.</p><button className="button primary" onClick={() => location.reload()}>Thử lại</button></div>;
+  if (!ready) return <div className="app-splash"><div className="brand-icon"><Leaf size={28} /></div><h1>Mộc</h1><p>Đang mở sổ tài chính của bạn…</p></div>;
+  const moreActive = !['dashboard', 'transactions', 'plans', 'statistics'].includes(route);
+  return <AppContext.Provider value={{ metadata, month, setMonth, notify, run, openTransaction: (type = 'expense', transaction, initialWalletId) => setEntry({ type, transaction, initialWalletId }), navigate, filter }}>
+    <div className="app-shell"><aside className="sidebar"><button className="brand" onClick={() => navigate('dashboard')}><span className="brand-icon"><Leaf size={26} /></span><span>Mộc<small>Tài chính cá nhân</small></span></button><span className="sidebar-label">SỔ CỦA BẠN</span><nav aria-label="Điều hướng chính">{navItems.map(({ route: target, title, icon: Icon }) => <button key={target} className={route === target || target === 'more' && moreActive ? 'active' : ''} onClick={() => navigate(target)}><Icon size={20} /><span>{title}</span>{(route === target || target === 'more' && moreActive) && <i />}</button>)}</nav><div className="sidebar-divider" /><span className="sidebar-label">QUẢN LÝ</span><nav aria-label="Quản lý tài chính"><button className={route === 'wallets' ? 'active' : ''} onClick={() => navigate('wallets')}><Wallet size={20} />Ví & tài sản</button><button className={route === 'categories' ? 'active' : ''} onClick={() => navigate('categories')}><Shapes size={20} />Danh mục</button></nav><div className="sidebar-bottom"><div className="privacy-card"><ShieldCheck size={22} /><strong>Chỉ của riêng bạn</strong><p>Lưu trên thiết bị.<br />An tâm cả khi offline.</p><button onClick={() => navigate('settings')}>Sao lưu dữ liệu <ArrowLeftRight size={14} /></button></div><span className="sidebar-footnote">Chăm chút từng đồng, mỗi ngày.</span></div></aside>
+    <div className="main-shell"><header className="topbar"><button className="mobile-brand" onClick={() => navigate('dashboard')}><Leaf size={23} />Mộc</button><div className="breadcrumb">Sổ tài chính<span>/</span>{({ dashboard: 'Tổng quan', transactions: 'Giao dịch', plans: 'Kế hoạch', statistics: 'Thống kê', more: 'Khác', settings: 'Cài đặt', wallets: 'Ví & tài sản', categories: 'Danh mục', debts: 'Vay & cho vay', events: 'Sự kiện', recurring: 'Định kỳ', tags: 'Tags', trash: 'Thùng rác' } as Record<string, string>)[route]}</div><div className="topbar-actions"><form className="global-search" onSubmit={e => { e.preventDefault(); navigate('transactions', { search: globalSearch }); }}><Search size={17} /><input aria-label="Tìm kiếm toàn bộ" placeholder="Tìm ghi chép…" value={globalSearch} onChange={e => setGlobalSearch(e.target.value)} /><kbd>↵</kbd></form><span className={`connection-badge ${offline ? 'is-offline' : ''}`}>{offline ? <WifiOff size={14} /> : <ShieldCheck size={14} />}<span>{offline ? 'Offline' : 'Lưu trên thiết bị'}</span></span><button className="profile-button" aria-label="Mở cài đặt" onClick={() => navigate('settings')}>M</button></div></header>
+    <main className="main-content"><Suspense fallback={<Loading />}>{route === 'dashboard' ? <Dashboard /> : route === 'transactions' ? <Transactions /> : route === 'plans' ? <Plans /> : route === 'statistics' ? <Statistics /> : route === 'wallets' ? <Wallets /> : route === 'categories' ? <Categories /> : route === 'debts' ? <Debts /> : route === 'events' ? <Events /> : route === 'recurring' ? <Recurring /> : route === 'tags' ? <Tags /> : route === 'settings' ? <Settings /> : route === 'trash' ? <Trash /> : <More />}</Suspense><footer className="page-footer"><span>Mộc · Một chút rõ ràng, mỗi ngày.</span><span><ShieldCheck size={13} />Riêng tư từ thiết kế</span></footer></main></div>
+    <button className="floating-add" aria-label="Tạo giao dịch nhanh" onClick={() => setQuick(true)}><Plus size={27} /><span>Ghi giao dịch</span></button><nav className="bottom-nav" aria-label="Điều hướng điện thoại">{navItems.map(({ route: target, title, icon: Icon }) => <button key={target} className={route === target || target === 'more' && moreActive ? 'active' : ''} onClick={() => navigate(target)}><Icon size={22} /><span>{title}</span></button>)}</nav>
+    {quick && <QuickMenu onClose={() => setQuick(false)} />}{entry && <TransactionForm key={`${entry.type}:${entry.transaction?.id ?? 'new'}`} type={entry.type} transaction={entry.transaction} initialWalletId={entry.initialWalletId} onClose={() => setEntry(undefined)} />}
+    {toast && <div className={`toast ${toast.error ? 'toast-error' : ''}`} role={toast.error ? 'alert' : 'status'}>{toast.error ? <X size={19} /> : <Check size={19} />}<span>{toast.message}</span><button className="icon-button" aria-label="Đóng thông báo" onClick={() => setToast(undefined)}><X size={17} /></button></div>}
+    {update && <div className="update-notice" role="status"><span>Có phiên bản Mộc mới. Lưu biểu mẫu trước khi cập nhật.</span><button className="button primary" onClick={() => void run(update)}>Cập nhật</button><button className="icon-button" aria-label="Để sau" onClick={() => setUpdate(undefined)}><X size={18} /></button></div>}
+    </div>
+  </AppContext.Provider>;
+}

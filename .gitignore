@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+test-results/
+playwright-report/
+.env*
+!.env.example
+private-data/
+*.xlsx
+*.xls
+*.csv
+*backup*.json
+*.log
+*.tsbuildinfo
