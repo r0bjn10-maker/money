@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus } from 'lucide-react';
+import { Plus, ArrowUpRight } from 'lucide-react';
 import { db } from './db';
 import { getPersonDebtOverview, payPersonDebt } from './services';
 import { today, calculateExpression } from './finance';
@@ -19,8 +19,9 @@ export function Debts() {
     <div className="list-toolbar"><div className="segmented"><button className={kind === 'borrow' ? 'active' : ''} onClick={() => setKind('borrow')}>Tôi nợ</button><button className={kind === 'lend' ? 'active' : ''} onClick={() => setKind('lend')}>Người khác nợ tôi</button></div></div>
     <section className="debt-overview" aria-label="Tổng quan khoản nợ"><div><span>{kind === 'borrow' ? 'Tổng cần trả' : 'Tổng cần thu'}</span><Money value={rows.reduce((sum, group) => sum + group.remaining, 0)} /></div><div><span>Đang mở</span><strong>{rows.filter(group => group.remaining > 0).length}<small> người</small></strong></div><div><span>Đã hoàn tất</span><strong>{rows.filter(group => group.remaining === 0).length}<small> người</small></strong></div></section>
     <div className="debt-grid">{rows.length ? rows.map(group => <button className={`panel debt-card ${group.remaining === 0 ? 'settled' : ''} ${group.status === 'Quá hạn' ? 'overdue' : ''}`} key={group.key} onClick={() => setSelectedKey(group.key)}>
-      <div className="debt-card-top"><span className="person-avatar">{group.personName.slice(0, 1).toUpperCase()}</span><span className={`soft-badge ${group.status === 'Quá hạn' ? 'danger-text' : ''}`}>{group.status}</span></div>
-      <h2>{group.personName}</h2><span className="muted">Còn lại</span><Money value={group.remaining} /><small>Tổng gốc <Money value={group.originalAmount} /> · {group.debts.length} khoản{group.dueDate && ` · Hạn ${group.dueDate}`}</small>
+      <div className="debt-person"><span className="person-avatar">{group.personName.slice(0, 1).toUpperCase()}</span><div><h2>{group.personName}</h2><small>{group.debts.length} khoản · Tổng gốc <Money value={group.originalAmount} />{group.dueDate && ` · Hạn ${group.dueDate}`}</small></div></div>
+      <div className="debt-balance"><span>Còn lại</span><Money value={group.remaining} /></div>
+      <div className="debt-state"><span className={`soft-badge ${group.status === 'Quá hạn' ? 'danger-text' : ''}`}>{group.status}</span><ArrowUpRight size={19} /></div>
       <div className="progress"><span style={{ width: `${(1 - group.remaining / group.originalAmount) * 100}%` }} /></div>
     </button>) : <section className="panel full-width"><EmptyState title="Mọi khoản nợ đều rõ ràng" description="Ghi lại khoản vay hoặc cho vay và theo dõi mỗi lần thanh toán." action={() => openTransaction(kind)} actionLabel="Ghi khoản nợ" /></section>}</div>
     {selected && <PersonDebtDetail key={selected.key} group={selected} onClose={() => setSelectedKey(undefined)} />}

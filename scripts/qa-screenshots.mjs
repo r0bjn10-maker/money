@@ -10,7 +10,7 @@ page.on('pageerror', error => errors.push(error.message));
 await mkdir('private-data/qa', { recursive: true });
 try {
   await page.goto(baseUrl);
-  await page.getByRole('heading', { name: 'Tiền rõ ràng. Sống nhẹ nhàng.' }).waitFor();
+  await page.getByRole('heading', { name: 'Tài chính, trong tầm tay.' }).waitFor();
   await page.evaluate(async () => { await navigator.serviceWorker.ready; await document.fonts.ready; });
   await expect(page.locator('.toast-error')).toHaveCount(0);
   if (await page.getByRole('button', { name: 'Đóng thông báo' }).count()) await page.getByRole('button', { name: 'Đóng thông báo' }).click();
@@ -29,6 +29,15 @@ try {
     await new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); }); db.close();
   });
   await page.reload(); await page.locator('.asset-value').getByText(/₫/).waitFor();
+  for (const [person, amount] of [['An · mẫu', '1200000'], ['Bình · mẫu', '2500000'], ['An · mẫu', '300000']]) {
+    await page.getByRole('button', { name: 'Tạo giao dịch nhanh', exact: true }).click();
+    await page.getByRole('button', { name: 'Đi vay', exact: true }).click();
+    await page.getByRole('textbox', { name: 'Số tiền', exact: true }).fill(amount);
+    await page.getByLabel('Người cho vay', { exact: true }).fill(person);
+    await page.getByRole('button', { name: 'Lưu giao dịch', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  }
+  if (await page.getByRole('button', { name: 'Đóng thông báo' }).count()) await page.getByRole('button', { name: 'Đóng thông báo' }).click();
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: 'private-data/qa/dashboard-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -39,7 +48,8 @@ try {
     await page.setViewportSize({ width, height: 900 });
     for (const route of ['dashboard', 'wallets', 'transactions', 'debts', 'statistics', 'settings']) {
       await page.goto(baseUrl + '#/' + route);
-      await page.locator('.page-heading').waitFor();
+      const titles = { dashboard: 'Tài chính, trong tầm tay.', wallets: 'Ví & tài sản', transactions: 'Giao dịch', debts: 'Vay & cho vay', statistics: 'Bức tranh tài chính', settings: 'Cài đặt' };
+      await page.getByRole('heading', { name: titles[route], exact: true }).waitFor();
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       if (width === 390 || width === 1440) await page.screenshot({ path: `private-data/qa/${route}-${width}.png`, fullPage: true });
     }

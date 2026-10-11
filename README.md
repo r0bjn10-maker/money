@@ -25,7 +25,7 @@ Trên Windows trong môi trường Codex này, có thể dùng runtime được 
 
 ## Các phần đã xây
 
-Giao diện v1.2.0 dùng xanh rừng, nền ngà và điểm nhấn vàng nhạt; thanh điều hướng nổi trên điện thoại, thao tác nhanh trên tổng quan, tổng tài sản ở màn hình ví và tổng cần thu/trả theo người. Font tiêu đề Lora hỗ trợ tiếng Việt được đóng gói trong `public/fonts/` theo SIL OFL, cache offline cùng app; không gọi dịch vụ font bên ngoài lúc sử dụng. Giao diện sáng/tối và reduced motion đều được hỗ trợ. Schema dữ liệu vẫn là v4.
+Giao diện v2.0.0 dùng trắng ngà và đen theo hướng editorial: tiêu đề serif, tài sản lớn, dòng tiền theo dải ngang, thẻ ví tương phản, danh sách nợ theo người và nhật ký giao dịch chia ngày. Nút ghi giao dịch nằm trên thanh đầu trang cố định ở điện thoại; điều hướng dùng đường kẻ và số thứ tự. Monogram và icon PWA được vẽ bằng SVG riêng. Font Lora hỗ trợ tiếng Việt được đóng gói trong `public/fonts/` theo SIL OFL, cache offline cùng app; không gọi dịch vụ font bên ngoài lúc sử dụng. Giao diện sáng/tối và reduced motion đều được hỗ trợ. Schema dữ liệu vẫn là v4.
 
 - Tổng quan: tổng tài sản hiện tại, tiền mặt, tài khoản/tài sản khác, thu chi theo tháng, ngân sách, dư nợ, lịch sử và biểu đồ từ dữ liệu thật.
 - Ví: tạo/sửa, mặc định, lưu trữ/mở lại, lịch sử, chuyển tiền, điều chỉnh số dư, loại khỏi tổng tài sản. Ví có lịch sử không được sửa số dư đầu kỳ hay xóa.

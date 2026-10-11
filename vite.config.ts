@@ -17,7 +17,7 @@ export default defineConfig({
     manifest: {
       name: 'Mộc · Tài chính cá nhân', short_name: 'Mộc', lang: 'vi',
       description: 'Sổ tài chính cá nhân, riêng tư và offline.',
-      theme_color: '#174e3c', background_color: '#f6f7f3', display: 'standalone',
+      theme_color: '#f5f3ed', background_color: '#f5f3ed', display: 'standalone',
       start_url: './', scope: './',
       icons: [
         { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
