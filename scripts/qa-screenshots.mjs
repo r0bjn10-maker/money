@@ -35,7 +35,7 @@ try {
   await page.screenshot({ path: 'private-data/qa/dashboard-mobile.png', fullPage: true });
   await page.goto(baseUrl + '#/statistics'); await page.getByRole('heading', { name: 'Bức tranh tài chính' }).waitFor(); await page.locator('.statistics-metrics').waitFor();
   await page.screenshot({ path: 'private-data/qa/statistics-mobile.png', fullPage: true });
-  for (const width of [320, 390, 768, 1440]) {
+  for (const width of [320, 390, 649, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const route of ['dashboard', 'wallets', 'transactions', 'debts', 'statistics', 'settings']) {
       await page.goto(baseUrl + '#/' + route);
@@ -61,8 +61,11 @@ try {
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await page.goto(baseUrl + '#/dashboard');
   await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  if (await page.getByRole('button', { name: 'Đóng thông báo' }).count()) await page.getByRole('button', { name: 'Đóng thông báo' }).click();
   await page.screenshot({ path: 'private-data/qa/dashboard-iphone-preview.png', fullPage: false });
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await page.screenshot({ path: 'private-data/qa/dashboard-desktop-preview.png', fullPage: false });
   expect(errors).toEqual([]);
   console.log('Visual QA screenshots saved in ignored private-data/qa. Context contained sample data only.');

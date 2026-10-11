@@ -246,6 +246,7 @@ input:not([type=checkbox]),select,textarea { border-radius:12px; min-height:49px
   .main-shell { margin-left:0; }
   .topbar { min-height:70px; padding:12px 25px; }
   .main-content { padding:28px 25px calc(150px + env(safe-area-inset-bottom)); }
+  .dashboard-top { display:flex; flex-direction:column; gap:16px; }
   .panel-heading .icon-button { min-width:44px; min-height:44px; width:44px; height:44px; padding:12px; }
   .bottom-nav { left:16px; right:16px; bottom:calc(10px + env(safe-area-inset-bottom)); padding:7px; border:1px solid var(--line); border-radius:22px; box-shadow:0 8px 32px #183f301c; background:var(--surface); }
   .bottom-nav button { border-radius:16px; min-height:53px; min-width:0; flex:1; padding:7px 2px; color:var(--muted); gap:5px; }
