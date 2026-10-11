@@ -1,4 +1,4 @@
-export const APP_VERSION = '2.0.0';
+export const APP_VERSION = '3.0.0';
 export const DB_VERSION = 4;
 export type TransactionType = 'expense' | 'income' | 'transfer' | 'borrow' | 'lend' | 'adjustment' | 'debt-payment';
 export type WalletType = 'cash' | 'bank' | 'ewallet' | 'savings' | 'investment' | 'other';

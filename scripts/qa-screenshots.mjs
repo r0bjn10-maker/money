@@ -10,7 +10,7 @@ page.on('pageerror', error => errors.push(error.message));
 await mkdir('private-data/qa', { recursive: true });
 try {
   await page.goto(baseUrl);
-  await page.getByRole('heading', { name: 'Tài chính, trong tầm tay.' }).waitFor();
+  await page.getByRole('heading', { name: 'Tổng quan tài chính' }).waitFor();
   await page.evaluate(async () => { await navigator.serviceWorker.ready; await document.fonts.ready; });
   await expect(page.locator('.toast-error')).toHaveCount(0);
   if (await page.getByRole('button', { name: 'Đóng thông báo' }).count()) await page.getByRole('button', { name: 'Đóng thông báo' }).click();
@@ -48,8 +48,11 @@ try {
     await page.setViewportSize({ width, height: 900 });
     for (const route of ['dashboard', 'wallets', 'transactions', 'debts', 'statistics', 'settings']) {
       await page.goto(baseUrl + '#/' + route);
-      const titles = { dashboard: 'Tài chính, trong tầm tay.', wallets: 'Ví & tài sản', transactions: 'Giao dịch', debts: 'Vay & cho vay', statistics: 'Bức tranh tài chính', settings: 'Cài đặt' };
+      const titles = { dashboard: 'Tổng quan tài chính', wallets: 'Ví & tài sản', transactions: 'Giao dịch', debts: 'Vay & cho vay', statistics: 'Bức tranh tài chính', settings: 'Cài đặt' };
       await page.getByRole('heading', { name: titles[route], exact: true }).waitFor();
+      if (route === 'dashboard') await page.locator('.wealth-hero').waitFor();
+      if (route === 'wallets') await expect(page.locator('.wallet-overview')).toContainText('77.885.000');
+      if (route === 'debts') await expect(page.locator('.debt-card')).toHaveCount(2);
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       if (width === 390 || width === 1440) await page.screenshot({ path: `private-data/qa/${route}-${width}.png`, fullPage: true });
     }
@@ -59,6 +62,7 @@ try {
   await page.getByLabel('Giao diện').selectOption('dark');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.goto(baseUrl + '#/dashboard');
+  await page.locator('.wealth-hero').waitFor();
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: 'private-data/qa/dashboard-dark.png', fullPage: true });
   await page.getByRole('button', { name: 'Ghi khoản chi', exact: true }).click();
@@ -70,6 +74,7 @@ try {
   await page.getByLabel('Giao diện').selectOption('light');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await page.goto(baseUrl + '#/dashboard');
+  await page.locator('.wealth-hero').waitFor();
   await page.evaluate(() => document.fonts.ready);
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   if (await page.getByRole('button', { name: 'Đóng thông báo' }).count()) await page.getByRole('button', { name: 'Đóng thông báo' }).click();

@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 test('daily ledger, budgets, trash, backup/restore and offline persistence', async ({ page, context, browserName }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/'); await expect(page.getByRole('heading', { name: 'Tài chính, trong tầm tay.' })).toBeVisible();
+  await page.goto('/'); await expect(page.getByRole('heading', { name: 'Tổng quan tài chính' })).toBeVisible();
   await expect(page.locator('.asset-value')).toContainText('0');
   await page.goto('/#/wallets'); await page.getByRole('button', { name: 'Tạo ví', exact: true }).click();
   await page.getByLabel('Tên ví').fill('Ví kiểm thử'); await page.getByLabel('Số dư đầu kỳ').fill('5000000'); await page.getByRole('button', { name: 'Lưu ví', exact: true }).click();
