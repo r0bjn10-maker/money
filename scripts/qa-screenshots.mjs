@@ -1,13 +1,19 @@
-import { chromium } from '@playwright/test';
+import { chromium, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
 const browser = await chromium.launch({ channel: 'chrome' });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1050 } });
 const page = await context.newPage();
+const baseUrl = process.env.QA_BASE_URL ?? 'http://127.0.0.1:4173/';
+const errors = [];
+page.on('pageerror', error => errors.push(error.message));
 await mkdir('private-data/qa', { recursive: true });
 try {
-  await page.goto('http://127.0.0.1:4173');
+  await page.goto(baseUrl);
   await page.getByRole('heading', { name: 'Tiền rõ ràng. Sống nhẹ nhàng.' }).waitFor();
+  await page.evaluate(async () => { await navigator.serviceWorker.ready; await document.fonts.ready; });
+  await expect(page.locator('.toast-error')).toHaveCount(0);
+  if (await page.getByRole('button', { name: 'Đóng thông báo' }).count()) await page.getByRole('button', { name: 'Đóng thông báo' }).click();
   await page.evaluate(async () => {
     const opened = indexedDB.open('moc-personal-finance');
     const db = await new Promise((resolve, reject) => { opened.onsuccess = () => resolve(opened.result); opened.onerror = () => reject(opened.error); });
@@ -23,10 +29,41 @@ try {
     await new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); }); db.close();
   });
   await page.reload(); await page.locator('.asset-value').getByText(/₫/).waitFor();
+  await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: 'private-data/qa/dashboard-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: 'private-data/qa/dashboard-mobile.png', fullPage: true });
-  await page.goto('http://127.0.0.1:4173/#/statistics'); await page.getByRole('heading', { name: 'Bức tranh tài chính' }).waitFor(); await page.locator('.statistics-metrics').waitFor();
+  await page.goto(baseUrl + '#/statistics'); await page.getByRole('heading', { name: 'Bức tranh tài chính' }).waitFor(); await page.locator('.statistics-metrics').waitFor();
   await page.screenshot({ path: 'private-data/qa/statistics-mobile.png', fullPage: true });
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const route of ['dashboard', 'wallets', 'transactions', 'debts', 'statistics', 'settings']) {
+      await page.goto(baseUrl + '#/' + route);
+      await page.locator('.page-heading').waitFor();
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      if (width === 390 || width === 1440) await page.screenshot({ path: `private-data/qa/${route}-${width}.png`, fullPage: true });
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(baseUrl + '#/settings');
+  await page.getByLabel('Giao diện').selectOption('dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.goto(baseUrl + '#/dashboard');
+  await page.evaluate(() => document.fonts.ready);
+  await page.screenshot({ path: 'private-data/qa/dashboard-dark.png', fullPage: true });
+  await page.getByRole('button', { name: 'Ghi khoản chi', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: 'private-data/qa/form-dark.png', fullPage: true });
+  await page.getByRole('dialog').getByRole('button', { name: 'Đóng', exact: true }).click();
+  await page.goto(baseUrl + '#/settings');
+  await page.getByLabel('Giao diện').selectOption('light');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.goto(baseUrl + '#/dashboard');
+  await page.evaluate(() => document.fonts.ready);
+  await page.screenshot({ path: 'private-data/qa/dashboard-iphone-preview.png', fullPage: false });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({ path: 'private-data/qa/dashboard-desktop-preview.png', fullPage: false });
+  expect(errors).toEqual([]);
   console.log('Visual QA screenshots saved in ignored private-data/qa. Context contained sample data only.');
 } finally { await context.close(); await browser.close(); }

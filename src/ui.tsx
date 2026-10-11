@@ -24,7 +24,7 @@ export function EmptyState({ title = 'Chưa có giao dịch nào', description =
   return <div className="empty-state"><div className="empty-icon">{icon ?? <Leaf size={30} />}</div><h3>{title}</h3><p>{description}</p>{action && <button className="button primary" onClick={action}><Plus size={17} />{actionLabel}</button>}</div>;
 }
 export function Money({ value, className = '' }: { value: number; className?: string }) { const { metadata } = useApp(); return <span className={`money ${className}`}>{money(value, metadata.settings.numberFormat, metadata.settings.currency)}</span>; }
-export function PageTitle({ eyebrow, title, description, action }: { eyebrow: string; title: string; description?: string; action?: ReactNode }) { return <div className="page-heading"><div><span className="eyebrow">{eyebrow}</span><h1>{title}</h1>{description && <p>{description}</p>}</div>{action}</div>; }
+export function PageTitle({ eyebrow, title, description, action, className = '' }: { eyebrow: string; title: string; description?: string; action?: ReactNode; className?: string }) { return <div className={`page-heading ${className}`}><div><span className="eyebrow">{eyebrow}</span><h1>{title}</h1>{description && <p>{description}</p>}</div>{action}</div>; }
 export function MonthSelector() {
   const { month, setMonth } = useApp();
   const move = (n: number) => setMonth(format(addMonths(parseISO(`${month}-01`), n), 'yyyy-MM'));
